@@ -15,26 +15,35 @@ const fs_source = /*glsl*/`
 	uniform float u_zoom;
 	uniform vec2 u_center;
 
+	const int MAX_ITERATIONS = 100;
+
 	vec2 f(vec2 x, vec2 c) {
 		return mat2(x, -x.y, x.x) * x + c;
 	}
-	vec3 palette(float t, vec3 a, vec3 b, vec3 c, vec3 d) {
-		return a + b*cos(6.28318 * (c * t + d));
+
+	vec4 palette(bool escaped, int iterations) {
+		if (!escaped) {
+			return vec4(0.99, 0.99, 0.99, 1.0);
+		}
+		vec3 b = vec3(0.59,0.55,0.75);
+		vec3 c = vec3(0.1, 0.2, 0.3);
+		vec3 d = vec3(0.75);
+		return vec4(b*cos(6.28318 * (c * float(iterations)/float(MAX_ITERATIONS) + d)), 1.0);
 	}
 	void main() {
 		vec2 c = (gl_FragCoord.xy - u_resolution / 2.0 - u_center) / u_zoom;
 		vec2 x = vec2(0.0);
 		bool escaped = false;
-		int iterations = 0;
-		for (int i = 0; i < 100; i++) {
-			iterations = i;
+		int iterations = MAX_ITERATIONS;
+		for (int i = 0; i < MAX_ITERATIONS; i++) {
 			x = f(x, c);
 			if (length(x) > 2.0) {
 				escaped = true;
+				iterations = i;
 				break;
 			}
 		}
-		gl_FragColor = escaped ? vec4(palette(float(iterations)/float(100), vec3(0.0),vec3(0.59,0.55,0.75),vec3(0.1, 0.2, 0.3),vec3(0.75)),1.0) : vec4(vec3(0.85, 0.99, 1.0), 1.0);
+		gl_FragColor = palette(escaped, iterations);
 	}
 `;
 
