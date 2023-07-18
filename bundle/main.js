@@ -15,35 +15,70 @@ const fs_source = /*glsl*/`
 	uniform float u_zoom;
 	uniform vec2 u_center;
 
-	const int MAX_ITERATIONS = 100;
+	const int STABILIZATION_ITERATIONS = 100;
+	const int PERIOD_FINDING_ITERATIONS = 100;
 
-	vec2 f(vec2 x, vec2 c) {
-		return mat2(x, -x.y, x.x) * x + c;
+	vec2 f(vec2 z, vec2 c) {
+		return mat2(z, -z.y, z.x) * z + c;
 	}
 
-	vec4 palette(bool escaped, int iterations) {
-		if (!escaped) {
-			return vec4(0.99, 0.99, 0.99, 1.0);
-		}
-		vec3 b = vec3(0.59,0.55,0.75);
-		vec3 c = vec3(0.1, 0.2, 0.3);
-		vec3 d = vec3(0.75);
-		return vec4(b*cos(6.28318 * (c * float(iterations)/float(MAX_ITERATIONS) + d)), 1.0);
+	vec4 outside_palette(int iterations, int max_iterations) {
+		vec3 a = vec3(0.5, 0.5, 0.5);
+		vec3 b = vec3(0.5, 0.5, 0.5);
+		vec3 c = vec3(1.0, 1.0, 1.0);
+		vec3 d = vec3(0.3, 0.2, 0.2);
+		return vec4(a + b*cos(6.28318 * (c * float(iterations)/float(max_iterations) + d)), 1.0);
 	}
-	void main() {
-		vec2 c = (gl_FragCoord.xy - u_resolution / 2.0 - u_center) / u_zoom;
-		vec2 x = vec2(0.0);
-		bool escaped = false;
-		int iterations = MAX_ITERATIONS;
-		for (int i = 0; i < MAX_ITERATIONS; i++) {
-			x = f(x, c);
-			if (length(x) > 2.0) {
+
+	vec4 inside_palette(int iterations, int max_iterations) {
+		vec3 a = vec3(0.5, 0.5, 0.5);
+		vec3 b = vec3(0.5, 0.5, 0.5);
+		vec3 c = vec3(1.0, 0.7, 0.4);
+		vec3 d = vec3(0.0, 0.15, 0.20);
+		return vec4(a + b*cos(6.28318 * (c * float(iterations)/float(max_iterations) + d)), 1.0);
+	}
+
+	void iterate(vec2 c, out bool escaped, out int iterations, out int max_iterations) {
+		max_iterations = STABILIZATION_ITERATIONS + PERIOD_FINDING_ITERATIONS;
+		vec2 z = vec2(0.0);
+		for (int i = 0; i < STABILIZATION_ITERATIONS; i++) {
+			z = f(z, c);
+			if (length(z) > 2.0) {
 				escaped = true;
 				iterations = i;
-				break;
+				return;
 			}
 		}
-		gl_FragColor = palette(escaped, iterations);
+		vec2 dz;
+		vec2 next_z;
+		for (int i = STABILIZATION_ITERATIONS; i < STABILIZATION_ITERATIONS + PERIOD_FINDING_ITERATIONS; i++) {
+			next_z = f(z, c);
+			dz += (next_z - z);
+			z = next_z;
+			if (length(dz) < 0.1){
+				escaped = false;
+				iterations = i - STABILIZATION_ITERATIONS;
+				return;
+			}
+			if (length(z) > 2.0) {
+				escaped = true;
+				iterations = i;
+				return;
+			}
+		}
+		escaped = false;
+		iterations = max_iterations;
+	}
+
+	void main() {
+		vec2 c = (gl_FragCoord.xy - u_resolution / 2.0 - u_center) / u_zoom;
+		bool escaped;
+		int iterations;
+		int max_iterations;
+		iterate(c, escaped, iterations, max_iterations);
+		gl_FragColor = escaped ?
+			outside_palette(iterations, max_iterations) :
+			inside_palette(iterations, max_iterations);
 	}
 `;
 
@@ -54,8 +89,10 @@ function main() {
 		return;
 	}
 
-	canvas.classList.add("full")
-	document.body.append(canvas)
+	canvas.classList.add("full");
+	document.body.append(canvas);
+
+	const zoom_text_element = document.getElementsByClassName('dashboard__zoom__text')[0];
 
 	const vs = compileShader(gl, vs_source, gl.VERTEX_SHADER);
 	const fs = compileShader(gl, fs_source, gl.FRAGMENT_SHADER);
@@ -70,13 +107,13 @@ function main() {
 	let center_y = 0;
 
 	const _redraw = () => {
-		console.log(`center: ${center_x}:${center_y}, zoomLog: ${zoomLog}`);
 		render(gl, program, 300 * Math.pow(zoomSpeed, zoomLog), center_x, center_y);
 	}
 	/**
 	 * Renders the scene by calling `render` function with all necessary parameters provided
 	 */
 	const redraw = () => {
+		zoom_text_element.innerText = String(Math.pow(zoomSpeed, zoomLog)).substring(0, 7);
 		window.requestAnimationFrame(_redraw);
 	}
 	// Begin animation loop 
