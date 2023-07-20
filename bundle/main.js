@@ -15,8 +15,8 @@ const fs_source = /*glsl*/`
 	uniform float u_zoom;
 	uniform vec2 u_center;
 
-	const int STABILIZATION_ITERATIONS = 100;
-	const int PERIOD_FINDING_ITERATIONS = 100;
+	const int STABILIZATION_ITERATIONS = 200;
+	const int PERIOD_FINDING_ITERATIONS = 50;
 
 	vec2 f(vec2 z, vec2 c) {
 		return mat2(z, -z.y, z.x) * z + c;
@@ -55,7 +55,7 @@ const fs_source = /*glsl*/`
 			next_z = f(z, c);
 			dz += (next_z - z);
 			z = next_z;
-			if (length(dz) < 0.1){
+			if (length(dz) < 100.0 / u_zoom){
 				escaped = false;
 				iterations = i - STABILIZATION_ITERATIONS;
 				return;
