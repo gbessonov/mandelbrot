@@ -12,8 +12,25 @@
 	<body>
 		<div class="dashboard">
 			<div class="dashboard__zoom">
+				<span>Zoom:&nbsp;</span>
 				<span class="dashboard__zoom__text"></span>
 			</div>
+			<div class="dashboard__x">
+				<span>X:&nbsp;</span>
+				<span class="dashboard__x__text"></span>
+			</div>
+			<div class="dashboard__y">
+				<span>Y:&nbsp;</span>
+				<span class="dashboard__y__text"></span>
+			</div>
+		</div>
+		<div class="center_mark">
+			<svg xmlns="http://www.w3.org/2000/svg" width="17" height="17">
+				<g>
+					<line stroke="#4c4c4c" stroke-linecap="round" id="vertical" y2="17" x2="8" y1="0" x1="8" stroke-opacity="0.91"/>
+					<line stroke="#4c4c4c" stroke-linecap="round" id="horizontal" y2="8" x2="17" y1="8" x1="0" stroke-opacity="0.91"/>
+				</g>
+			</svg>
 		</div>
 		<script src="./bundle/main.js"></script>
 	</body>

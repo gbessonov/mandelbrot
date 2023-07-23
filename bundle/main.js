@@ -23,19 +23,14 @@ const fs_source = /*glsl*/`
 	}
 
 	vec4 outside_palette(int iterations, int max_iterations) {
-		vec3 a = vec3(0.5, 0.5, 0.5);
-		vec3 b = vec3(0.5, 0.5, 0.5);
-		vec3 c = vec3(1.0, 1.0, 1.0);
-		vec3 d = vec3(0.3, 0.2, 0.2);
-		return vec4(a + b*cos(6.28318 * (c * float(iterations)/float(max_iterations) + d)), 1.0);
+		float t = float(iterations)/float(max_iterations);
+		vec3 a = vec3(0.1, 0.1, 0.3);
+		vec3 b = vec3(0.9, 0.9, 0.7) * pow((1.0 - t), 3.0);
+		return vec4(a + b, 1.0);
 	}
 
 	vec4 inside_palette(int iterations, int max_iterations) {
-		vec3 a = vec3(0.5, 0.5, 0.5);
-		vec3 b = vec3(0.5, 0.5, 0.5);
-		vec3 c = vec3(1.0, 0.7, 0.4);
-		vec3 d = vec3(0.0, 0.15, 0.20);
-		return vec4(a + b*cos(6.28318 * (c * float(iterations)/float(max_iterations) + d)), 1.0);
+		return vec4(0.1, 0.1, 0.1, 1.0);
 	}
 
 	void iterate(vec2 c, out bool escaped, out int iterations, out int max_iterations) {
@@ -82,6 +77,8 @@ const fs_source = /*glsl*/`
 	}
 `;
 
+const INITIAL_SCALE = 300;
+
 function main() {
 	const canvas = document.createElement("canvas");
 	const gl = canvas.getContext("webgl");
@@ -93,6 +90,8 @@ function main() {
 	document.body.append(canvas);
 
 	const zoom_text_element = document.getElementsByClassName('dashboard__zoom__text')[0];
+	const x_text_element = document.getElementsByClassName("dashboard__x__text")[0];
+	const y_text_element = document.getElementsByClassName("dashboard__y__text")[0];
 
 	const vs = compileShader(gl, vs_source, gl.VERTEX_SHADER);
 	const fs = compileShader(gl, fs_source, gl.FRAGMENT_SHADER);
@@ -107,13 +106,19 @@ function main() {
 	let center_y = 0;
 
 	const _redraw = () => {
-		render(gl, program, 300 * Math.pow(zoomSpeed, zoomLog), center_x, center_y);
+		throttle(() => {
+			const currentZoom = Math.pow(zoomSpeed, zoomLog);
+			const currentScale = INITIAL_SCALE * currentZoom;
+			zoom_text_element.innerText = (currentZoom).toExponential(4);
+			x_text_element.innerText = (-center_x / currentScale).toFixed(9);
+			y_text_element.innerText = (-center_y / currentScale).toFixed(9);
+		}, 200);
+		render(gl, program, INITIAL_SCALE * Math.pow(zoomSpeed, zoomLog), center_x, center_y);
 	}
 	/**
 	 * Renders the scene by calling `render` function with all necessary parameters provided
 	 */
 	const redraw = () => {
-		zoom_text_element.innerText = String(Math.pow(zoomSpeed, zoomLog)).substring(0, 7);
 		window.requestAnimationFrame(_redraw);
 	}
 	// Begin animation loop 
@@ -198,6 +203,7 @@ function main() {
 
 		redraw();
 	});
+
 }
 
 /**
@@ -317,6 +323,23 @@ function resizeCanvasToDisplaySize(canvas, multiplier) {
 		return true;
 	}
 	return false;
+}
+
+{
+	let waiting = false;
+	/**
+	 * Executes `callback` function no more than once in `interval` ms.
+	 * @param {Function} callback A function to be executed.
+	 * @param {Number} interval the minimum interval between consequent `callback` calls.
+	 */
+	function throttle(callback, interval){
+		if (waiting){ return; }
+		waiting = true;
+		setTimeout(()=>{
+			waiting = false;
+			callback();
+		}, interval);
+	}
 }
 
 main();
