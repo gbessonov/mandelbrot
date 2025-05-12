@@ -10,4 +10,5 @@ export default defineConfig({
             include: ['**/*.glsl', '**/*.vert', '**/*.frag'],
             exclude: 'node_modules/**'
         }),],
+    base: "/mandelbrot/"
 })
