@@ -85,9 +85,11 @@ const App = () => {
         gl.viewport(0, 0, canvas.width, canvas.height);
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.useProgram(program);
+
         gl.uniform2f(uResolution, canvas.width, canvas.height);
         gl.uniform2f(uCenter, cameraRef.current.x, cameraRef.current.y);
         gl.uniform1f(uZoom, cameraRef.current.zoom);
+
         gl.drawArrays(gl.TRIANGLES, 0, 6);
     }, []);
 
