@@ -5,6 +5,9 @@ import fragmentShaderSource from './shaders/fragmentShader.glsl';
 import {Camera} from "./core/camera.ts";
 import {useInputControls} from './hooks/useInputControls';
 
+import './App.css';
+import CameraInfo from "./components/cameraInfo/cameraInfo.tsx";
+
 const FULLSCREEN_TRIANGLE = new Float32Array([
     -1, -1,
     1, -1,
@@ -72,7 +75,7 @@ function initGL(canvas: HTMLCanvasElement): GLContext {
 
 const App = () => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
-    const camera = useRef<Camera>(new Camera(50, 0, 60));
+    const cameraRef = useRef<Camera>(new Camera(50, 0, 60));
     const animationId = useRef<number | null>(null);
     const glContextRef = useRef<GLContext | null>(null);
 
@@ -83,8 +86,8 @@ const App = () => {
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.useProgram(program);
         gl.uniform2f(uResolution, canvas.width, canvas.height);
-        gl.uniform2f(uCenter, camera.current.x, camera.current.y);
-        gl.uniform1f(uZoom, camera.current.zoom);
+        gl.uniform2f(uCenter, cameraRef.current.x, cameraRef.current.y);
+        gl.uniform1f(uZoom, cameraRef.current.zoom);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
     }, []);
 
@@ -120,15 +123,21 @@ const App = () => {
 
     useInputControls({
         canvasRef,
-        cameraRef: camera,
+        cameraRef: cameraRef,
         render: () => {
-            if (glContextRef.current) {
-                render(glContextRef.current);
+            if (!glContextRef.current) {
+                return;
             }
+            render(glContextRef.current);
         },
     });
 
-    return <canvas ref={canvasRef} style={{width: '100vw', height: '100vh', display: 'block'}}/>;
+    return (
+        <>
+            <canvas className="main-canvas" ref={canvasRef}/>
+            <CameraInfo cameraRef={cameraRef}/>
+        </>
+    );
 };
 
 export default App;
