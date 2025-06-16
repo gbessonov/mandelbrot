@@ -2,7 +2,8 @@
 
 precision highp float;
 uniform vec2 u_resolution;
-uniform vec2 u_center;
+uniform vec2 u_center_high;
+uniform vec2 u_center_low;
 uniform float u_zoom;
 
 out vec4 outColor;
@@ -15,7 +16,7 @@ vec4 getColor(float t) {
 }
 
 void main() {
-    vec2 c = (gl_FragCoord.xy - 0.5 * u_resolution - u_center) / u_zoom;
+    vec2 c = (gl_FragCoord.xy - 0.5 * u_resolution - u_center_high - u_center_low) / u_zoom;
     vec2 z = vec2(0.0);
     const int maxIterations = 200;
     int iterations = 0;

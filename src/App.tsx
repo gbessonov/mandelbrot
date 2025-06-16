@@ -21,8 +21,15 @@ interface GLContext {
     gl: WebGL2RenderingContext;
     program: WebGLProgram;
     uResolution: WebGLUniformLocation;
-    uCenter: WebGLUniformLocation;
+    uCenterHigh: WebGLUniformLocation;
+    uCenterLow: WebGLUniformLocation;
     uZoom: WebGLUniformLocation;
+}
+
+function splitFloat64(value: number): [number, number] {
+    const high = Math.fround(value);
+    const low = value - high;
+    return [high, low];
 }
 
 function compileShader(gl: WebGL2RenderingContext, type: number, source: string): WebGLShader {
@@ -63,14 +70,15 @@ function initGL(canvas: HTMLCanvasElement): GLContext {
     gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
 
     const uResolution = gl.getUniformLocation(program, 'u_resolution');
-    const uCenter = gl.getUniformLocation(program, 'u_center');
+    const uCenterHigh = gl.getUniformLocation(program, 'u_center_high');
+    const uCenterLow = gl.getUniformLocation(program, 'u_center_low');
     const uZoom = gl.getUniformLocation(program, 'u_zoom');
 
-    if (!uResolution || !uCenter || !uZoom) {
-        throw new Error('Failed to get uniform locations');
+    if (!uResolution || !uCenterHigh || !uCenterLow || !uZoom) {
+        throw new Error(`Failed to get uniform locations: res: ${uResolution}, ch: ${uCenterHigh}, cl: ${uCenterLow}, z: ${uZoom}`);
     }
 
-    return {gl, program, uResolution, uCenter, uZoom};
+    return {gl, program, uResolution, uCenterHigh, uCenterLow, uZoom};
 }
 
 const App = () => {
@@ -80,15 +88,20 @@ const App = () => {
     const glContextRef = useRef<GLContext | null>(null);
 
     const render = useCallback((context: GLContext) => {
-        const {gl, program, uResolution, uCenter, uZoom} = context;
+        const {gl, program, uResolution, uCenterHigh, uCenterLow, uZoom} = context;
         const canvas = gl.canvas as HTMLCanvasElement;
         gl.viewport(0, 0, canvas.width, canvas.height);
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.useProgram(program);
 
         gl.uniform2f(uResolution, canvas.width, canvas.height);
-        gl.uniform2f(uCenter, cameraRef.current.x, cameraRef.current.y);
         gl.uniform1f(uZoom, cameraRef.current.zoom);
+
+        const [xHigh, xLow] = splitFloat64(cameraRef.current.x);
+        const [yHigh, yLow] = splitFloat64(cameraRef.current.y);
+
+        gl.uniform2f(uCenterHigh, xHigh, yHigh);
+        gl.uniform2f(uCenterLow, xLow, yLow);
 
         gl.drawArrays(gl.TRIANGLES, 0, 6);
     }, []);
@@ -106,7 +119,6 @@ const App = () => {
         resizeCanvas();
         const glContext = initGL(canvas);
         glContextRef.current = glContext;
-
         const loop = () => {
             render(glContext);
             animationId.current = requestAnimationFrame(loop);
