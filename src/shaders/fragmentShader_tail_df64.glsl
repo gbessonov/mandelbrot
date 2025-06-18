@@ -1,13 +1,3 @@
-#version 300 es
-precision highp float;
-
-uniform vec2 u_resolution;
-uniform vec2 u_center_high;
-uniform vec2 u_center_low;
-uniform float u_zoom;
-
-out vec4 outColor;
-
 //--- High-precision float from scalar
 vec2 hp(float value) {
     return vec2(value, 0.0);
@@ -51,37 +41,30 @@ vec2 hp_mul(vec2 a, vec2 b) {
 }
 
 vec2 hp_div(vec2 a, float b) {
-    return hp_mul(a, hp(1.0 /b));
+    return hp_mul(a, hp(1.0 / b));
+}
+
+vec2 hp_scale(float c, vec2 a) {
+    return vec2(c * a.x, c * a.y);
 }
 
 vec2 hp_square(vec2 a) {
     return hp_mul(a, a);
 }
 
-//--- Color mapping
-vec4 getColor(float t) {
-    if (t > 0.9999999) return vec4(0.1, 0.1, 0.1, 1.0);
-    vec3 a = vec3(0.1, 0.1, 0.3);
-    vec3 b = vec3(0.9, 0.9, 0.7) * pow((1.0 - t), 3.0);
-    return vec4(a + b, 1.0);
-}
-
 //--- Main fragment function
 void main() {
     // Convert gl_FragCoord to high-precision offset
-    vec2 frag_x = hp(gl_FragCoord.x);
-    vec2 frag_y = hp(gl_FragCoord.y);
+    vec2 offset_x = twoSum(gl_FragCoord.x, -0.5 * u_resolution.x);
+    vec2 offset_y = twoSum(gl_FragCoord.y, -0.5 * u_resolution.y);
 
-    vec2 offset_x = hp_sub(frag_x, hp(0.5 * u_resolution.x));
-    vec2 offset_y = hp_sub(frag_y, hp(0.5 * u_resolution.y));
-
-    vec2 c_re = hp_div(hp_sub(offset_x, twoSum(u_center_high.x, u_center_low.x)), u_zoom);
-    vec2 c_im = hp_div(hp_sub(offset_y, twoSum(u_center_high.y, u_center_low.y)), u_zoom);
+    vec2 c_re = hp_div(hp_sub(offset_x, twoSum(u_center_x.x, u_center_x.y)), u_zoom);
+    vec2 c_im = hp_div(hp_sub(offset_y, twoSum(u_center_y.x, u_center_y.y)), u_zoom);
 
     vec2 z_re = hp(0.0);
     vec2 z_im = hp(0.0);
 
-    int maxIterations = 25 * (int(log(u_zoom)) + 1);
+    int maxIterations = iterationsByZoom(u_zoom);
     int iterations = 0;
 
     for (int i = 0; i < maxIterations; ++i) {
@@ -92,7 +75,7 @@ void main() {
 
         vec2 z_re_old = z_re;
         z_re = hp_sum(hp_sub(z_re2, z_im2), c_re);
-        z_im = hp_sum(2.0 * hp_mul(z_re_old, z_im), c_im);
+        z_im = hp_sum(hp_scale(2.0, hp_mul(z_re_old, z_im)), c_im);
         iterations++;
     }
 
