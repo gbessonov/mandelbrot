@@ -1,4 +1,11 @@
-// ShaderManager.ts
+const FULLSCREEN_TRIANGLE = new Float32Array([
+    -1, -1,
+    1, -1,
+    -1, 1,
+    -1, 1,
+    1, -1,
+    1, 1,
+]);
 
 export interface ShaderContext {
     program: WebGLProgram;
@@ -22,11 +29,7 @@ export class ShaderManager {
     private createFullscreenTriangle(): WebGLBuffer {
         const buffer = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
-        const vertices = new Float32Array([
-            -1, -1, 1, -1, -1, 1,
-            -1, 1, 1, -1, 1, 1,
-        ]);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, FULLSCREEN_TRIANGLE, this.gl.STATIC_DRAW);
         return buffer;
     }
 
