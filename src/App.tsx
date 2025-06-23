@@ -28,7 +28,7 @@ const DEBOUNCE_DELAY = 100; // ms
 
 const App = () => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
-    const cameraRef = useRef<Camera>(new Camera(50, 0, 60));
+    const cameraRef = useRef<Camera>(new Camera(50, 0, 310));
     const animationId = useRef<number | null>(null);
     const shaderManagerRef = useRef<ShaderManager | null>(null);
     const debounceTimerRef = useRef<number | null>(null);

@@ -2,6 +2,8 @@ import {type RefObject, useEffect, useState} from "react";
 
 import {Camera} from "../../core/camera.ts";
 
+import {Editable} from "../editable";
+
 interface CameraInfoProps {
     cameraRef: RefObject<Camera>;
 }
@@ -66,11 +68,33 @@ const CameraInfo = (props: CameraInfoProps) => {
     const y = cameraInfoState.y / cameraInfoState.zoom;
     const zoom = formatNumberForDisplay(cameraInfoState.zoom);
 
+    const updateX = (value: number) => {
+        props.cameraRef.current.x = value * cameraInfoState.zoom;
+    }
+    const updateY = (value: number) => {
+        props.cameraRef.current.y = value * cameraInfoState.zoom;
+    }
+    const updateZoom = (value: number) => {
+        if (value < 1.0) {
+            value = 1.0;
+        }
+        props.cameraRef.current.zoom = value;
+    }
+
     return (
         <div className="camera-info">
-            <div className={"camera-info-row"}><strong>X:</strong> {x}</div>
-            <div className={"camera-info-row"}><strong>Y:</strong> {y}</div>
-            <div className={"camera-info-row"}><strong>Zoom:</strong> {zoom}</div>
+            <Editable className="camera-info-row"
+                      label={"X"}
+                      value={x}
+                      updateValue={updateX}></Editable>
+            <Editable className="camera-info-row"
+                      label={"Y"}
+                      value={y}
+                      updateValue={updateY}></Editable>
+            <Editable className="camera-info-row"
+                      label={"Zoom"}
+                      value={zoom}
+                      updateValue={updateZoom}></Editable>
         </div>
     );
 }

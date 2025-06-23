@@ -26,3 +26,16 @@
 .camera-info .camera-info-row {
     text-align: left;
 }
+
+.editable {
+    display: flex;
+    flex-direction: row;
+}
+
+.editable .editable-label {
+    flex: 0 0 50px;
+}
+
+.editable .editable-value {
+    flex: 1;
+}
